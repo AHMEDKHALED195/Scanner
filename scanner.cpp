@@ -4,10 +4,17 @@
 #include <vector>
 using namespace std;
 
-struct TokenData {
+class TokenData {
+public:
     string category;
     string text;
     int lineNum;
+
+    TokenData(string c, string t, int l) {
+        category = c;
+        text = t;
+        lineNum = l;
+    }
 };
 
 vector<string> reservedWords = {
@@ -39,30 +46,30 @@ vector<TokenData> analyzeCode(const string& source) {
         string value = result.str();
 
         if (result[1].matched) {
-            // comment, ignore
+            // comment
         }
         else if (result[2].matched) {
-            tokenList.push_back({ "STRING", "\"" + result[2].str() + "\"", currentLine });
+            tokenList.push_back(TokenData("STRING", "\"" + result[2].str() + "\"", currentLine));
         }
         else if (result[3].matched) {
-            tokenList.push_back({ "DOUBLE", value, currentLine });
+            tokenList.push_back(TokenData("DOUBLE", value, currentLine));
         }
         else if (result[4].matched) {
-            tokenList.push_back({ "INTEGER", value, currentLine });
+            tokenList.push_back(TokenData("INTEGER", value, currentLine));
         }
         else if (result[5].matched) {
             if (isReserved(value))
-                tokenList.push_back({ "KEYWORD", value, currentLine });
+                tokenList.push_back(TokenData("KEYWORD", value, currentLine));
             else if (value == "true" || value == "false")
-                tokenList.push_back({ "BOOLEAN", value, currentLine });
+                tokenList.push_back(TokenData("BOOLEAN", value, currentLine));
             else
-                tokenList.push_back({ "IDENTIFIER", value, currentLine });
+                tokenList.push_back(TokenData("IDENTIFIER", value, currentLine));
         }
         else if (result[6].matched) {
-            tokenList.push_back({ "OPERATOR", value, currentLine });
+            tokenList.push_back(TokenData("OPERATOR", value, currentLine));
         }
         else if (result[7].matched) {
-            tokenList.push_back({ "SYMBOL", value, currentLine });
+            tokenList.push_back(TokenData("SYMBOL", value, currentLine));
         }
         else if (result[8].matched) {
             for (char c : value)
@@ -79,14 +86,15 @@ vector<TokenData> analyzeCode(const string& source) {
 
 int main() {
     string inputCode = R"(
-        go
-        plug "game.lib";
-        num score = 0;
-        flip gameOn = true;
-        show score;
-        word playerName = "LeBron";
-        drift score = score + 1.5;
-    )";
+
+go
+plug "game.lib";
+num score = 0;
+flip gameOn = true;
+show score;
+word playerName = "LeBron";
+drift score = score + 1.5;
+)";
 
     cout << "Input Code:\n" << inputCode << endl;
     cout << "-----------------------------\n";
