@@ -1,7 +1,6 @@
 ﻿#include <iostream>
 #include <regex>
 #include <string>
-#include <vector>
 using namespace std;
 
 class TokenData {
@@ -10,6 +9,7 @@ public:
     string text;
     int lineNum;
 
+    TokenData() {}
     TokenData(string c, string t, int l) {
         category = c;
         text = t;
@@ -31,44 +31,46 @@ bool isReserved(const string& word) {
     return false;
 }
 
-vector<TokenData> analyzeCode(const string& source) {
-    vector<TokenData> tokenList;
+int analyzeCode(const string& source, TokenData tokens[], int maxTokens) {
     regex pattern(
         "(//.*)|\"([^\"\\n]*)\"|(\\d+\\.\\d+)|(\\d+)|([a-zA-Z_][a-zA-Z0-9_]*)|"
         "(==|!=|<=|>=|=|\\+|\\-|\\*|/|<|>)|([(){};,])|(\\s+)|(.)"
     );
+
     int currentLine = 1;
+    int tokenCount = 0;
     auto start = sregex_iterator(source.begin(), source.end(), pattern);
     auto end = sregex_iterator();
 
-    for (auto it = start; it != end; ++it) {
+    for (auto it = start; it != end && tokenCount < maxTokens; ++it) {
         smatch result = *it;
         string value = result.str();
 
         if (result[1].matched) {
+            // comment
         }
         else if (result[2].matched) {
-            tokenList.push_back(TokenData("STRING", "\"" + result[2].str() + "\"", currentLine));
+            tokens[tokenCount++] = TokenData("STRING", "\"" + result[2].str() + "\"", currentLine);
         }
         else if (result[3].matched) {
-            tokenList.push_back(TokenData("DOUBLE", value, currentLine));
+            tokens[tokenCount++] = TokenData("DOUBLE", value, currentLine);
         }
         else if (result[4].matched) {
-            tokenList.push_back(TokenData("INTEGER", value, currentLine));
+            tokens[tokenCount++] = TokenData("INTEGER", value, currentLine);
         }
         else if (result[5].matched) {
             if (isReserved(value))
-                tokenList.push_back(TokenData("KEYWORD", value, currentLine));
+                tokens[tokenCount++] = TokenData("KEYWORD", value, currentLine);
             else if (value == "true" || value == "false")
-                tokenList.push_back(TokenData("BOOLEAN", value, currentLine));
+                tokens[tokenCount++] = TokenData("BOOLEAN", value, currentLine);
             else
-                tokenList.push_back(TokenData("IDENTIFIER", value, currentLine));
+                tokens[tokenCount++] = TokenData("IDENTIFIER", value, currentLine);
         }
         else if (result[6].matched) {
-            tokenList.push_back(TokenData("OPERATOR", value, currentLine));
+            tokens[tokenCount++] = TokenData("OPERATOR", value, currentLine);
         }
         else if (result[7].matched) {
-            tokenList.push_back(TokenData("SYMBOL", value, currentLine));
+            tokens[tokenCount++] = TokenData("SYMBOL", value, currentLine);
         }
         else if (result[8].matched) {
             for (char c : value)
@@ -79,7 +81,7 @@ vector<TokenData> analyzeCode(const string& source) {
             cerr << "Error at line " << currentLine << ": invalid character '" << value << "'" << endl;
         }
     }
-    return tokenList;
+    return tokenCount;
 }
 
 int main() {
@@ -91,13 +93,21 @@ show score;
 word playerName = "LeBron";
 drift score = score + 1.5;
 )";
+
     cout << "Input Code:\n" << inputCode << endl;
     cout << "-----------------------------\n";
     cout << "Tokens:\n\n";
-    vector<TokenData> tokens = analyzeCode(inputCode);
-    for (auto& tk : tokens) {
-        cout << "Line " << tk.lineNum << " | " << tk.category << " -> " << tk.text << endl;
+
+    const int MAX = 200;
+    TokenData tokenArray[MAX];
+    int count = analyzeCode(inputCode, tokenArray, MAX);
+
+    for (int i = 0; i < count; i++) {
+        cout << "Line " << tokenArray[i].lineNum
+            << " | " << tokenArray[i].category
+            << " -> " << tokenArray[i].text << endl;
     }
+
     cout << "\nLexical analysis finished.\n";
     return 0;
 }
